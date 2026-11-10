@@ -23,9 +23,7 @@ jobs:
           grep -q 'CONFIG_RT_CONSOLE_DEVICE_NAME="vcom"' third_party/rt-thread/bsp/stm32/stm32h743-fk743m2-iit6/.config
           grep -q '#define HAL_PCD_MODULE_ENABLED' third_party/rt-thread/bsp/stm32/stm32h743-fk743m2-iit6/board/CubeMX_Config/Inc/stm32h7xx_hal_conf.h
           grep -q 'RCC_USBCLKSOURCE_HSI48' third_party/rt-thread/bsp/stm32/stm32h743-fk743m2-iit6/board/board.c
-          if grep -q "^    src += \['drv_usart.c'\]" third_party/rt-thread/bsp/stm32/libraries/HAL_Drivers/drivers/SConscript; then
-            grep -q "if GetDepend(\['BSP_USING_UART'\]):" third_party/rt-thread/bsp/stm32/libraries/HAL_Drivers/drivers/SConscript
-          fi
+          grep -q "if GetDepend(\['BSP_USING_UART'\]):" third_party/rt-thread/bsp/stm32/libraries/HAL_Drivers/drivers/SConscript
           grep -q '#ifdef BSP_USING_UART' third_party/rt-thread/bsp/stm32/libraries/HAL_Drivers/drv_common.c
           if grep -q 'h7os_early_dfu_check();' third_party/rt-thread/bsp/stm32/libraries/HAL_Drivers/drv_common.c; then
             echo "Obsolete late DFU hook remains in drv_common.c" >&2
@@ -33,7 +31,6 @@ jobs:
           fi
           grep -q 'return finsh_prompt;' third_party/rt-thread/components/finsh/shell.c
           python3 scripts/prepare.py --no-clone
-
   firmware-build:
     runs-on: ubuntu-latest
     steps:
@@ -53,18 +50,7 @@ jobs:
           bash scripts/build.sh
           grep -q 'bl  h7os_early_dfu_check' third_party/rt-thread/bsp/stm32/libraries/stm32h7_cmsis_driver-latest/Source/Templates/gcc/startup_stm32h743xx.s
           python3 scripts/patch_startup.py
-          arm-none-eabi-nm third_party/rt-thread/bsp/stm32/stm32h743-fk743m2-iit6/rt-thread.elf | grep ' h7os_early_dfu_check
-      - name: Upload firmware images
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: H7OS-FK743M2-IIT6-stage0-unverified
-          path: |
-            third_party/rt-thread/bsp/stm32/stm32h743-fk743m2-iit6/rt-thread.elf
-            third_party/rt-thread/bsp/stm32/stm32h743-fk743m2-iit6/rtthread.bin
-          if-no-files-found: error
-          retention-days: 7
-
+          arm-none-eabi-nm third_party/rt-thread/bsp/stm32/stm32h743-fk743m2-iit6/rt-thread.elf | grep -E ' [TW] h7os_early_dfu_check$'
       - name: Upload firmware images
         if: success()
         uses: actions/upload-artifact@v4

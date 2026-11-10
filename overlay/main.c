@@ -5,6 +5,11 @@
 #include <rtthread.h>
 #include <rtdevice.h>
 #include <board.h>
+#if defined(RT_USING_DFS) && defined(RT_USING_DFS_TMPFS) && defined(DFS_USING_POSIX)
+#include <dfs_fs.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#endif
 #ifdef RT_USING_FINSH
 #include <finsh.h>
 #include <shell.h>
@@ -35,6 +40,7 @@ static volatile rt_uint32_t g_h7os_led_toggles;
 static volatile rt_uint32_t g_led_brightness = 50U;
 static volatile rt_uint32_t g_pwm_phase;
 static rt_bool_t g_tim6_ready;
+static rt_bool_t g_fs_ready;
 
 /* The board's LED is active-low: PIN_LOW lights it up. */
 static void h7os_led_set(rt_bool_t on)
@@ -169,6 +175,39 @@ __attribute__((naked)) void h7os_early_dfu_check(void)
     );
 }
 
+
+/* Stage-0.5 filesystem: RT-Thread DFS v1 + tmpfs, backed by the
+ * existing 512 KiB AXI SRAM heap. Supports nested directories;
+ * no SD/SDRAM/QSPI is used and all files vanish at power-off.
+ * DFS and tmpfs are registered by RT-Thread's component init
+ * before main() runs.
+ */
+static rt_bool_t h7os_mount_root(void)
+{
+#if defined(RT_USING_DFS) && defined(RT_USING_DFS_TMPFS) && defined(DFS_USING_POSIX)
+    static const char * const dirs[] =
+    {
+        "/bin", "/tmp", "/home", "/home/cc"
+    };
+    rt_size_t i;
+
+    if (dfs_mount(RT_NULL, "/", "tmp", 0, RT_NULL) != 0)
+        return RT_FALSE;
+
+    for (i = 0; i < sizeof(dirs) / sizeof(dirs[0]); ++i)
+    {
+        if (mkdir(dirs[i], 0755) != 0)
+            return RT_FALSE;
+    }
+
+    if (chdir("/home/cc") != 0)
+        return RT_FALSE;
+    return RT_TRUE;
+#else
+    return RT_FALSE;
+#endif
+}
+
 #ifdef RT_USING_FINSH
 static const char *h7os_led_mode_name(enum h7os_led_mode mode)
 {
@@ -286,6 +325,8 @@ static int h7os(int argc, char **argv)
     rt_kprintf("H7OS FK743M2-IIT6: alive, ticks=%lu, LED toggles=%lu\n",
                (unsigned long)rt_tick_get(),
                (unsigned long)g_h7os_led_toggles);
+    rt_kprintf("Filesystem: %s\n",
+               g_fs_ready ? "tmpfs mounted at / (volatile)" : "unavailable");
     return 0;
 }
 MSH_CMD_EXPORT(h7os, Show H7OS system heartbeat);
@@ -298,6 +339,7 @@ int main(void)
 
     rt_pin_mode(FK743M2_LED_PIN, PIN_MODE_OUTPUT);
     h7os_led_pwm_init();
+    g_fs_ready = h7os_mount_root();
 
     /* Device init creates 'vcom' after USB class registration. Bind
      * after init, not in rt_hw_board_init where USB is not ready yet. */
@@ -313,6 +355,9 @@ int main(void)
             console_ready = RT_TRUE;
             rt_kprintf("\nH7OS FK743M2-IIT6 USB stage-0 boot\n");
             rt_kprintf("STM32H743 / USB CDC vcom / PH7 LED\n");
+            rt_kprintf("Filesystem: %s\n",
+                       g_fs_ready ? "tmpfs /, home=/home/cc (RAM only)"
+                                  : "mount failed (check DFS configuration)");
             break;
         }
 

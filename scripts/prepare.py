@@ -88,6 +88,19 @@ def create_bsp() -> None:
         ('CONFIG_RT_CONSOLE_DEVICE_NAME="uart3"', 'CONFIG_RT_CONSOLE_DEVICE_NAME="vcom"'),
         ("CONFIG_BSP_USING_UART=y", "# CONFIG_BSP_USING_UART is not set"),
         ("CONFIG_BSP_USING_UART3=y", "# CONFIG_BSP_USING_UART3 is not set"),
+        ("# CONFIG_RT_USING_DFS is not set",
+         """CONFIG_RT_USING_DFS=y
+CONFIG_DFS_USING_POSIX=y
+CONFIG_DFS_USING_WORKDIR=y
+CONFIG_DFS_FD_MAX=16
+CONFIG_RT_USING_DFS_V1=y
+CONFIG_DFS_FILESYSTEMS_MAX=4
+CONFIG_DFS_FILESYSTEM_TYPES_MAX=4
+# CONFIG_RT_USING_DFS_ELMFAT is not set
+# CONFIG_RT_USING_DFS_DEVFS is not set
+# CONFIG_RT_USING_DFS_ROMFS is not set
+# CONFIG_RT_USING_DFS_RAMFS is not set
+CONFIG_RT_USING_DFS_TMPFS=y"""),
         ("# CONFIG_RT_USING_USB_DEVICE is not set",
          """CONFIG_RT_USING_USB=y
 CONFIG_RT_USING_USB_DEVICE=y
@@ -118,6 +131,16 @@ CONFIG_BSP_USBD_PHY_EMBEDDED=y
         ("#define BSP_USING_UART3\n", ""),
         ("#define BSP_USING_UART\n", ""),
         ("#define BSP_STM32_UART_V1_TX_TIMEOUT 6000\n", ""),
+        ("/* DFS: device virtual file system */",
+         """/* DFS: device virtual file system */
+#define RT_USING_DFS
+#define DFS_USING_POSIX
+#define DFS_USING_WORKDIR
+#define DFS_FD_MAX 16
+#define RT_USING_DFS_V1
+#define DFS_FILESYSTEMS_MAX 4
+#define DFS_FILESYSTEM_TYPES_MAX 4
+#define RT_USING_DFS_TMPFS"""),
         ("/* Using USB legacy version */",
          """/* Using USB legacy version */
 #define RT_USING_USB
@@ -216,6 +239,18 @@ CONFIG_BSP_USBD_PHY_EMBEDDED=y
         "    else"
     )
 
+    # RT-Thread v5.3.0's mount-list command assumes every mounted
+    # filesystem has a block device. RAM-backed tmpfs has dev_id=NULL.
+    # Fix the null dereference so 'mount' is safe with '/' on tmpfs.
+    msh_file = UPSTREAM / "components" / "finsh" / "msh_file.c"
+    patch_shared_once(
+        msh_file,
+        "iter->ops->name, iter->dev_id->parent.name, iter->path);",
+        "iter->ops->name,\n"
+        "                           iter->dev_id ? iter->dev_id->parent.name : \"none\",\n"
+        "                           iter->path);"
+    )
+
     main = TARGET_PATH / "applications" / "main.c"
     main.write_text((ROOT / "overlay" / "main.c").read_text(encoding="utf-8"),
                     encoding="utf-8")
@@ -223,7 +258,8 @@ CONFIG_BSP_USBD_PHY_EMBEDDED=y
     print("Console: USB OTG FS CDC (PA11/PA12), Linux /dev/ttyACM*")
     print("LED: PH7; HSE: 25 MHz; on-chip Flash: 2 MiB; AXI SRAM heap only")
     print("USB CDC configured but not yet tested on board; ROM DFU is separate.")
-    print("NOT YET SUPPORTED: SDRAM, QSPI, runtime DFU, dynamic modules.")
+    print("DFS v1 tmpfs enabled: /, /home/cc, /tmp, /bin (volatile AXI SRAM)")
+    print("NOT YET SUPPORTED: SDRAM, QSPI, dynamic modules.")
 
 
 def main() -> int:

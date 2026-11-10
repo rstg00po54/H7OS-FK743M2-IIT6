@@ -59,6 +59,23 @@ class PrepareTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             patch_reset_handler("Reset_Handler:\n  bl  SystemInit\n")
 
+    def test_tmpfs_config_and_null_safe_mount(self):
+        prepare = (ROOT / "scripts/prepare.py").read_text()
+        for symbol in ("CONFIG_RT_USING_DFS=y", "CONFIG_DFS_USING_POSIX=y",
+                       "CONFIG_DFS_USING_WORKDIR=y", "CONFIG_RT_USING_DFS_V1=y",
+                       "CONFIG_RT_USING_DFS_TMPFS=y", "# CONFIG_RT_USING_DFS_DEVFS is not set",
+                       "#define RT_USING_DFS_TMPFS"):
+            self.assertIn(symbol, prepare)
+        self.assertIn('iter->dev_id ? iter->dev_id->parent.name', prepare)
+
+    def test_tmpfs_is_mounted_before_shell_binding(self):
+        main = (ROOT / "overlay/main.c").read_text()
+        self.assertIn('dfs_mount(RT_NULL, "/", "tmp", 0, RT_NULL)', main)
+        self.assertIn('chdir("/home/cc")', main)
+        self.assertLess(main.index('g_fs_ready = h7os_mount_root();'),
+                        main.index('finsh_set_device("vcom");'))
+        self.assertIn('rt_kprintf("Filesystem: %s', main)
+
     def test_overlay_pins(self):
         msp = (ROOT / "overlay/stm32h7xx_hal_msp.c").read_text()
         self.assertIn("GPIO_PIN_11 | GPIO_PIN_12", msp)

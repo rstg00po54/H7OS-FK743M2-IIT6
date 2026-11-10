@@ -10,9 +10,10 @@ A dedicated RT-Thread-based application-runtime project for **FK743M2-IIT6 (STM3
 - FK743M2-specific **25 MHz HSE → 480 MHz candidate PLL**, **USB OTG FS PA11/PA12**, **PH7 LED**
 - Firmware stays in **2 MiB internal Flash**; kernel heap currently uses **512 KiB AXI SRAM** only
 - RT-Thread MSH console configured for **USB CDC ACM** (device name `vcom`); one USB data cable, no TTL adapter
+- **DFS v1 + tmpfs** root `/` with `/bin`, `/tmp`, `/home/cc` on the existing AXI SRAM heap. Files do **not** survive reset.
 - GitHub Actions offline tests for the adapter script; generated upstream sources are not checked in
 
-USB CDC and MSH have been **verified on the physical board**. The PH7 LED is **active-low** (verified by board testing). Its TIM6 interrupt-based software PWM (100Hz / 1% steps) supports `led pwm 0..100`, `led on`, `led off`, `led blink`, and `led status`. The updated polarity needs a new firmware flash. A `dfu` MSH command requests STM32 ROM USB DFU using a one-shot DTCM flag. The first implementation reset without enumerating DFU; the revised path checks the marker directly in CMSIS Reset_Handler and explicitly disconnects USB before resetting. **This fix still needs board testing.** Hardware USART is intentionally excluded from the USB-only build while retaining RT-Thread's serial framework for CDC. Periodic console heartbeat logs were removed to prevent corrupting interactive command entry; PH7 still toggles and the `h7os` MSH command reports uptime ticks and LED toggle count. The Shell now shows `cc@H7OS:~$ `, matching a Linux terminal style (the username, hostname, and `~` are fixed display text until user accounts and a working-directory-aware filesystem are implemented). Runtime DFU, SDRAM, filesystem, and application loading remain **future milestones**. See [roadmap](docs/ROADMAP.md).
+USB CDC and MSH have been **verified on the physical board**. The PH7 LED is **active-low** (verified by board testing). Its TIM6 interrupt-based software PWM (100Hz / 1% steps) supports `led pwm 0..100`, `led on`, `led off`, `led blink`, and `led status`. The updated polarity needs a new firmware flash. A `dfu` MSH command requests STM32 ROM USB DFU using a one-shot DTCM flag. The first implementation reset without enumerating DFU; the revised path checks the marker directly in CMSIS Reset_Handler and explicitly disconnects USB before resetting. **This fix still needs board testing.** Hardware USART is intentionally excluded from the USB-only build while retaining RT-Thread's serial framework for CDC. Periodic console heartbeat logs were removed to prevent corrupting interactive command entry; PH7 still toggles and the `h7os` MSH command reports uptime ticks and LED toggle count. The Shell now shows `cc@H7OS:~$ `, matching a Linux terminal style (the username, hostname, and `~` are fixed display text until user accounts and a working-directory-aware filesystem are implemented). SDRAM, persistent QSPI filesystem, and dynamic application loading remain **future milestones**. See [roadmap](docs/ROADMAP.md).
 
 ## Building on Ubuntu
 
@@ -55,6 +56,30 @@ bash -n scripts/build.sh
 - For initial flashing/recovery, use the board BOOT0/DFU procedure with STM32CubeProgrammer or `dfu-util`; a flashing command must only be used after the MCU/Flash and target boot mode have been confirmed.
 
 See [USB notes](docs/USB_ONLY.md). Although USB CDC is now hardware-tested, a bad clock or USB image may require **BOOT0/ROM DFU recovery**, not a serial adapter.
+
+## RAM filesystem smoke test
+
+After flashing the new firmware, connect via USB CDC and test:
+
+```text
+cc@H7OS:~$ pwd
+/home/cc
+cc@H7OS:~$ ls /
+cc@H7OS:~$ mkdir demo
+cc@H7OS:~$ cd demo
+cc@H7OS:~$ echo "hello H7OS" note.txt
+cc@H7OS:~$ cat note.txt
+hello H7OS
+cc@H7OS:~$ cd /
+cc@H7OS:~$ mount
+cc@H7OS:~$ df
+```
+
+The shell prompt is currently static and always displays `~`; use `pwd` for
+the actual current working directory. The filesystem is `tmpfs`, not
+Flash/SDRAM/QSPI. `free` shows how much of the 512-KiB AXI SRAM heap remains,
+and all temporary files disappear after reset. No persistence is claimed.
+Do not upload large firmware modules into this limited heap yet.
 
 ## Why .mo instead of arbitrary .bin?
 

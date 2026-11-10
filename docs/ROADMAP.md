@@ -16,8 +16,9 @@
 
 ## Stage 1 — memory
 
-- [ ] Initialize FMC / W9825G6KH SDRAM (32 MiB)
-- [ ] Destructive SDRAM pattern/address/walking-bit tests
+- [x] Source-integrate manual FMC / W9825G6KH SDRAM init (32 MiB)
+- [x] Implement destructive data/address-bit tests and full 32 MiB pattern tests
+- [ ] Verify on real FK743M2 hardware; do not enable SDRAM heap until then
 - [ ] Reserve framebuffer region if an LCD is used
 - [ ] Configure MPU for a separate executable application pool
 - [ ] Verify D-Cache clean, I-Cache invalidate, and instruction execution

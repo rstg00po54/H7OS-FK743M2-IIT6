@@ -5,6 +5,7 @@
 #include <rtthread.h>
 #include <rtdevice.h>
 #include <board.h>
+#include "h7os_sdram.h"
 #if defined(RT_USING_DFS) && defined(RT_USING_DFS_TMPFS) && defined(DFS_USING_POSIX)
 #include <dfs_fs.h>
 #include <sys/stat.h>
@@ -327,6 +328,8 @@ static int h7os(int argc, char **argv)
                (unsigned long)g_h7os_led_toggles);
     rt_kprintf("Filesystem: %s\n",
                g_fs_ready ? "tmpfs mounted at / (volatile)" : "unavailable");
+    rt_kprintf("SDRAM: %s\n", h7os_sdram_is_ready() ?
+               "32 MiB initialized (not heap)" : "not initialized");
     return 0;
 }
 MSH_CMD_EXPORT(h7os, Show H7OS system heartbeat);

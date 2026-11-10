@@ -118,7 +118,8 @@ CONFIG_RT_VCOM_SERNO="H7OSFK74300001"
 CONFIG_RT_VCOM_SER_LEN=14
 CONFIG_RT_VCOM_TX_TIMEOUT=1000"""),
         ("# end of Hardware Drivers Config",
-         """CONFIG_BSP_USING_USBD=y
+         """CONFIG_BSP_USING_SDRAM=y
+CONFIG_BSP_USING_USBD=y
 CONFIG_BSP_USBD_TYPE_FS=y
 CONFIG_BSP_USBD_PHY_EMBEDDED=y
 # end of Hardware Drivers Config"""),
@@ -158,7 +159,8 @@ CONFIG_BSP_USBD_PHY_EMBEDDED=y
 #define RT_VCOM_SER_LEN 14
 #define RT_VCOM_TX_TIMEOUT 1000"""),
         ("/* end of Hardware Drivers Config */",
-         """#define BSP_USING_USBD
+         """#define BSP_USING_SDRAM
+#define BSP_USING_USBD
 #define BSP_USBD_TYPE_FS
 #define BSP_USBD_PHY_EMBEDDED
 /* end of Hardware Drivers Config */"""),
@@ -190,6 +192,8 @@ CONFIG_BSP_USBD_PHY_EMBEDDED=y
          "#define HSE_VALUE    ((uint32_t)25000000)"),
         ("/* #define HAL_PCD_MODULE_ENABLED   */",
          "#define HAL_PCD_MODULE_ENABLED"),
+        ("/* #define HAL_SDRAM_MODULE_ENABLED   */",
+         "#define HAL_SDRAM_MODULE_ENABLED"),
     ])
 
     # Do not initialize Nucleo's USART3 on PD8/PD9: these pins are
@@ -211,6 +215,14 @@ CONFIG_BSP_USBD_PHY_EMBEDDED=y
     patch_shared_once(drv_common,
                       "#ifdef RT_USING_SERIAL",
                       "#ifdef BSP_USING_UART")
+
+    # BSP_USING_SDRAM selects the HAL SDRAM + FMC source files.
+    # Do NOT build the RT-Thread generic drv_sdram.c: that driver
+    # initializes early and requires an unrelated sdram_port.h.
+    # H7OS has its own on-demand driver in applications/.
+    patch_shared_once(drivers_sconscript,
+                      "if GetDepend('BSP_USING_SDRAM'):",
+                      "if GetDepend('BSP_USING_SDRAM_DRIVER'):")
 
     # Migration from older H7OS versions: undo the late board-init
     # hook. The DFU check now runs directly in the CMSIS Reset_Handler.
@@ -251,15 +263,17 @@ CONFIG_BSP_USBD_PHY_EMBEDDED=y
         "                           iter->path);"
     )
 
-    main = TARGET_PATH / "applications" / "main.c"
-    main.write_text((ROOT / "overlay" / "main.c").read_text(encoding="utf-8"),
-                    encoding="utf-8")
+    appdir = TARGET_PATH / "applications"
+    for name in ("main.c", "h7os_sdram.c", "h7os_sdram.h"):
+        (appdir / name).write_text((ROOT / "overlay" / name).read_text(encoding="utf-8"),
+                                  encoding="utf-8")
     print(f"Generated BSP: {TARGET_PATH}")
     print("Console: USB OTG FS CDC (PA11/PA12), Linux /dev/ttyACM*")
     print("LED: PH7; HSE: 25 MHz; on-chip Flash: 2 MiB; AXI SRAM heap only")
     print("USB CDC configured but not yet tested on board; ROM DFU is separate.")
     print("DFS v1 tmpfs enabled: /, /home/cc, /tmp, /bin (volatile AXI SRAM)")
-    print("NOT YET SUPPORTED: SDRAM, QSPI, dynamic modules.")
+    print("SDRAM: on-demand FMC diagnostics only; not yet added to RTOS heap")
+    print("NOT YET SUPPORTED: SDRAM heap, QSPI, dynamic modules.")
 
 
 def main() -> int:

@@ -76,6 +76,27 @@ class PrepareTests(unittest.TestCase):
                         main.index('finsh_set_device("vcom");'))
         self.assertIn('rt_kprintf("Filesystem: %s', main)
 
+
+    def test_sdram_manual_bringup_config(self):
+        prep = (ROOT / "scripts/prepare.py").read_text()
+        sdram = (ROOT / "overlay/h7os_sdram.c").read_text()
+        hdr = (ROOT / "overlay/h7os_sdram.h").read_text()
+        msp = (ROOT / "overlay/stm32h7xx_hal_msp.c").read_text()
+        for item in ("CONFIG_BSP_USING_SDRAM=y",
+                     "#define BSP_USING_SDRAM",
+                     "#define HAL_SDRAM_MODULE_ENABLED",
+                     "BSP_USING_SDRAM_DRIVER",
+                     '"h7os_sdram.c", "h7os_sdram.h"'):
+            self.assertIn(item, prep)
+        for item in ("HAL_SDRAM_Init", "HAL_SDRAM_ProgramRefreshRate",
+                     "FMC_SDRAM_BANK1", "MPU_REGION_SIZE_32MB",
+                     "MSH_CMD_EXPORT(sdram", "sdram_full_test"):
+            self.assertIn(item, sdram)
+        self.assertIn("0xC0000000UL", hdr)
+        for port in ("GPIOF", "GPIOH", "GPIOG", "GPIOE", "GPIOD"):
+            self.assertIn("HAL_GPIO_Init(" + port, msp)
+        self.assertNotIn("HAL_GPIO_Init(GPIOA", msp[msp.index("void HAL_SDRAM_MspInit"):])
+
     def test_overlay_pins(self):
         msp = (ROOT / "overlay/stm32h7xx_hal_msp.c").read_text()
         self.assertIn("GPIO_PIN_11 | GPIO_PIN_12", msp)

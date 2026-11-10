@@ -9,7 +9,7 @@ Reference: [fcaussa/FK743M2-IIT6](https://github.com/fcaussa/FK743M2-IIT6), incl
 | Core clock | HSE / 5 * 192 / 2 = 480 MHz | candidate configuration, requires bench verification |
 | On-chip Flash | 2 MiB at 0x08000000 | firmware |
 | AXI SRAM | 512 KiB at 0x24000000 | current heap and link target |
-| SDRAM | W9825G6KH 32 MiB at 0xC0000000 | **not initialized yet** |
+| SDRAM | W9825G6KH 32 MiB at 0xC0000000 | On-demand FMC init and tests, not yet hardware verified |
 | QSPI | W25Q64JV 8 MiB | **not initialized yet** |
 | LED | PH7 | heartbeat |
 | USB CDC Shell | USB_OTG_FS PA11 = DM, PA12 = DP | configured; untested on physical board |

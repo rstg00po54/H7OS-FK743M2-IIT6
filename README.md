@@ -57,6 +57,30 @@ bash -n scripts/build.sh
 
 See [USB notes](docs/USB_ONLY.md). Although USB CDC is now hardware-tested, a bad clock or USB image may require **BOOT0/ROM DFU recovery**, not a serial adapter.
 
+## 32 MiB SDRAM diagnostics (experimental)
+
+The FK743M2 W9825G6KH is connected to FMC SDRAM Bank1 at
+`0xC0000000`, with a 16-bit data bus, 13 row bits, 9 column bits
+and four internal banks. GPIO pinout/timings follow fcaussa's FK743M2
+board reference. Initialization is **manual** so bad SDRAM wiring cannot
+prevent USB Shell and DFU from booting.
+
+```text
+cc@H7OS:~$ sdram status
+cc@H7OS:~$ sdram init
+cc@H7OS:~$ sdram test quick
+cc@H7OS:~$ sdram test full
+cc@H7OS:~$ free
+```
+
+The init command itself performs a destructive data-line and address-line
+check. The full test writes/reads all 32 MiB with two complementary
+patterns. SDRAM is mapped as Normal non-cacheable/XN via MPU region 7.
+**Do not run these tests after allocating actual data in SDRAM.**
+This version does NOT add SDRAM to the RT-Thread heap, so `free`
+and tmpfs still use internal AXI SRAM. If the SDRAM access faults,
+recover through BOOT0 and ROM USB DFU.
+
 ## RAM filesystem smoke test
 
 After flashing the new firmware, connect via USB CDC and test:

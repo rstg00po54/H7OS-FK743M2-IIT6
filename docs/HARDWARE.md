@@ -12,16 +12,16 @@ Reference: [fcaussa/FK743M2-IIT6](https://github.com/fcaussa/FK743M2-IIT6), incl
 | SDRAM | W9825G6KH 32 MiB at 0xC0000000 | **not initialized yet** |
 | QSPI | W25Q64JV 8 MiB | **not initialized yet** |
 | LED | PH7 | heartbeat |
-| UART console | USART1 PA9 TX / PA10 RX | 115200 8N1; requires external 3.3V USB-TTL adapter |
-| USB OTG FS | PA11 DP? **No:** PA11 = DM, PA12 = DP | **not implemented yet** |
+| USB CDC Shell | USB_OTG_FS PA11 = DM, PA12 = DP | configured; untested on physical board |
+| UART | USART1 PA9/PA10 | not enabled in USB-only build |
 | SWD | PA13 SWDIO / PA14 SWCLK | rescue and debugging |
 
-**Critical**: USART3 PD8/PD9 in the generic H743 Nucleo BSP conflicts with the FK743M2 SDRAM bus. The stage-0 overlay disables that wiring by switching to USART1.
+**Critical**: USART3 PD8/PD9 in the generic H743 Nucleo BSP conflicts with the FK743M2 SDRAM bus. The USB-only overlay disables that hardware UART and initializes OTG FS instead.
 
 **Do not** connect the 3.3V USART pins to a true RS-232 interface or a 5V TTL output.
 
 Current linker script and heap cover **AXI SRAM only** (512 KiB), not all the H743's physical on-chip RAM. This is intentional until external memory and MPU handling are tested.
 
-The stage-0 application only flashes the LED and prints a heartbeat. It does not implement USB CDC, DFU, file systems or a process manager.
+The stage-0 application blinks the LED and attempts to provide a USB CDC MSH console. Its USB enumeration is not yet verified on FK743M2 hardware. ROM DFU remains separate; the app does not implement DFU Runtime, filesystems or a process manager.
 
 For dynamic modules, mapping external SDRAM as executable memory and maintaining instruction/data caches is mandatory before executing code from it.

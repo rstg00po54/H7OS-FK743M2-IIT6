@@ -75,35 +75,92 @@ def create_bsp() -> None:
         ("CONFIG_SOC_STM32H743ZI=y", "CONFIG_SOC_STM32H743II=y"),
         ("CONFIG_BOARD_STM32H743_NUCLEO=y", "CONFIG_BOARD_FK743M2_IIT6=y"),
         ("CONFIG_BOARD_SERIES_STM32_NUCLEO_144=y\n", ""),
-        ('CONFIG_RT_CONSOLE_DEVICE_NAME="uart3"', 'CONFIG_RT_CONSOLE_DEVICE_NAME="uart1"'),
-        ("UART3", "UART1"),
+        ('CONFIG_RT_CONSOLE_DEVICE_NAME="uart3"', 'CONFIG_RT_CONSOLE_DEVICE_NAME="vcom"'),
+        ("CONFIG_BSP_USING_UART=y", "# CONFIG_BSP_USING_UART is not set"),
+        ("CONFIG_BSP_USING_UART3=y", "# CONFIG_BSP_USING_UART3 is not set"),
+        ("# CONFIG_RT_USING_USB_DEVICE is not set",
+         """CONFIG_RT_USING_USB=y
+CONFIG_RT_USING_USB_DEVICE=y
+CONFIG_RT_USBD_THREAD_STACK_SZ=4096
+CONFIG_USB_VENDOR_ID=0x0FFE
+CONFIG_USB_PRODUCT_ID=0x0001
+# CONFIG_RT_USB_DEVICE_COMPOSITE is not set
+CONFIG__RT_USB_DEVICE_CDC=y
+CONFIG_RT_USB_DEVICE_CDC=y
+CONFIG_RT_VCOM_TASK_STK_SIZE=1024
+CONFIG_RT_CDC_RX_BUFSIZE=512
+CONFIG_RT_VCOM_MANUFACTURER_STRING="H7OS Dev"
+CONFIG_RT_VCOM_PRODUCT_STRING="H7OS USB Shell"
+CONFIG_RT_VCOM_SERNO="H7OSFK74300001"
+CONFIG_RT_VCOM_SER_LEN=14
+CONFIG_RT_VCOM_TX_TIMEOUT=1000"""),
+        ("# end of Hardware Drivers Config",
+         """CONFIG_BSP_USING_USBD=y
+CONFIG_BSP_USBD_TYPE_FS=y
+CONFIG_BSP_USBD_PHY_EMBEDDED=y
+# end of Hardware Drivers Config"""),
     ])
     patch(TARGET_PATH / "rtconfig.h", [
         ("#define SOC_STM32H743ZI", "#define SOC_STM32H743II"),
         ("#define BOARD_STM32H743_NUCLEO", "#define BOARD_FK743M2_IIT6"),
         ("#define BOARD_SERIES_STM32_NUCLEO_144\n", ""),
-        ('#define RT_CONSOLE_DEVICE_NAME "uart3"', '#define RT_CONSOLE_DEVICE_NAME "uart1"'),
-        ("#define BSP_USING_UART3", "#define BSP_USING_UART1"),
+        ('#define RT_CONSOLE_DEVICE_NAME "uart3"', '#define RT_CONSOLE_DEVICE_NAME "vcom"'),
+        ("#define BSP_USING_UART3\n", ""),
+        ("#define BSP_USING_UART\n", ""),
+        ("#define BSP_STM32_UART_V1_TX_TIMEOUT 6000\n", ""),
+        ("/* Using USB legacy version */",
+         """/* Using USB legacy version */
+#define RT_USING_USB
+#define RT_USING_USB_DEVICE
+#define RT_USBD_THREAD_STACK_SZ 4096
+#define USB_VENDOR_ID 0x0FFE
+#define USB_PRODUCT_ID 0x0001
+#define _RT_USB_DEVICE_CDC
+#define RT_USB_DEVICE_CDC
+#define RT_VCOM_TASK_STK_SIZE 1024
+#define RT_CDC_RX_BUFSIZE 512
+#define RT_VCOM_MANUFACTURER_STRING "H7OS Dev"
+#define RT_VCOM_PRODUCT_STRING "H7OS USB Shell"
+#define RT_VCOM_SERNO "H7OSFK74300001"
+#define RT_VCOM_SER_LEN 14
+#define RT_VCOM_TX_TIMEOUT 1000"""),
+        ("/* end of Hardware Drivers Config */",
+         """#define BSP_USING_USBD
+#define BSP_USBD_TYPE_FS
+#define BSP_USBD_PHY_EMBEDDED
+/* end of Hardware Drivers Config */"""),
     ])
     patch(TARGET_PATH / "board" / "Kconfig", [
-        ("UART3", "UART1"),
+        ('menu "Board extended module Drivers"',
+         'config BSP_USING_USBD\n'
+         '    bool "Enable USB FS CDC Shell"\n'
+         '    default y\n'
+         '    select RT_USING_USB_DEVICE\n'
+         '    select BSP_USBD_TYPE_FS\n'
+         '    select BSP_USBD_PHY_EMBEDDED\n\n'
+         'menu "Board extended module Drivers"'),
     ])
     patch(TARGET_PATH / "board" / "board.c", [
         ("RCC_OscInitStruct.PLL.PLLM = 1;", "RCC_OscInitStruct.PLL.PLLM = 5;"),
         ("RCC_OscInitStruct.PLL.PLLN = 120;", "RCC_OscInitStruct.PLL.PLLN = 192;"),
         ("RCC_PLL1VCIRANGE_3", "RCC_PLL1VCIRANGE_2"),
-        ("RCC_PERIPHCLK_USART3", "RCC_PERIPHCLK_USART1"),
+        ("RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;",
+         "RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE | RCC_OSCILLATORTYPE_HSI48;"),
+        ("RCC_OscInitStruct.HSEState = RCC_HSE_ON;",
+         "RCC_OscInitStruct.HSEState = RCC_HSE_ON;\n    RCC_OscInitStruct.HSI48State = RCC_HSI48_ON;"),
+        ("RCC_PERIPHCLK_USART3", "RCC_PERIPHCLK_USB"),
         ("PeriphClkInitStruct.Usart234578ClockSelection = RCC_USART234578CLKSOURCE_D2PCLK1;",
-         "PeriphClkInitStruct.Usart16ClockSelection = RCC_USART16CLKSOURCE_D2PCLK2;"),
+         "PeriphClkInitStruct.UsbClockSelection = RCC_USBCLKSOURCE_HSI48;"),
     ])
     patch(TARGET_PATH / "board" / "CubeMX_Config" / "Inc" / "stm32h7xx_hal_conf.h", [
         ("#define HSE_VALUE    ((uint32_t)8000000)",
          "#define HSE_VALUE    ((uint32_t)25000000)"),
+        ("/* #define HAL_PCD_MODULE_ENABLED   */",
+         "#define HAL_PCD_MODULE_ENABLED"),
     ])
 
-    # The source Nucleo BSP uses USART3 on PD8/PD9. Those pins are SDRAM
-    # data lines on FK743M2! Replace its MSP implementation, not merely the
-    # UART number, to avoid inadvertently taking over FMC pins.
+    # Do not initialize Nucleo's USART3 on PD8/PD9: these pins are
+    # occupied by the FK743M2 SDRAM. USB OTG FS uses PA11/PA12 instead.
     msp = TARGET_PATH / "board" / "CubeMX_Config" / "Src" / "stm32h7xx_hal_msp.c"
     msp.write_text((ROOT / "overlay" / "stm32h7xx_hal_msp.c").read_text(encoding="utf-8"),
                    encoding="utf-8")
@@ -112,9 +169,10 @@ def create_bsp() -> None:
     main.write_text((ROOT / "overlay" / "main.c").read_text(encoding="utf-8"),
                     encoding="utf-8")
     print(f"Generated BSP: {TARGET_PATH}")
-    print("Console: USART1 PA9(TX) PA10(RX), 115200 8N1 (3.3V TTL)")
+    print("Console: USB OTG FS CDC (PA11/PA12), Linux /dev/ttyACM*")
     print("LED: PH7; HSE: 25 MHz; on-chip Flash: 2 MiB; AXI SRAM heap only")
-    print("NOT YET SUPPORTED: SDRAM, QSPI, USB CDC/DFU, dynamic modules.")
+    print("USB CDC configured but not yet tested on board; ROM DFU is separate.")
+    print("NOT YET SUPPORTED: SDRAM, QSPI, runtime DFU, dynamic modules.")
 
 
 def main() -> int:

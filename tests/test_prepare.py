@@ -26,11 +26,15 @@ class PrepareTests(unittest.TestCase):
 
     def test_overlay_pins(self):
         msp = (ROOT / "overlay/stm32h7xx_hal_msp.c").read_text()
-        self.assertIn("GPIO_PIN_9 | GPIO_PIN_10", msp)
-        self.assertIn("GPIO_AF7_USART1", msp)
+        self.assertIn("GPIO_PIN_11 | GPIO_PIN_12", msp)
+        self.assertIn("GPIO_AF10_OTG1_FS", msp)
+        self.assertIn("HAL_PCD_MspInit", msp)
+        self.assertNotIn("HAL_UART_MspInit", msp)
         self.assertNotIn("USART3", msp)
         main = (ROOT / "overlay/main.c").read_text()
         self.assertIn("GET_PIN(H, 7)", main)
+        self.assertIn('rt_console_set_device("vcom")', main)
+        self.assertIn('finsh_set_device("vcom")', main)
 
 
 if __name__ == "__main__":

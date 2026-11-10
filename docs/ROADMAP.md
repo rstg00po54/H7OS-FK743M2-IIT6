@@ -4,10 +4,12 @@
 
 - [x] Pin board target and reproducible RT-Thread v5.3.0 upstream source
 - [x] Generate BSP from official stm32h743-st-nucleo example
-- [x] Apply FK743M2 oscillator, USART1, and PH7 configuration
+- [x] Apply FK743M2 oscillator, USB OTG FS and PH7 configuration
 - [x] Provide host build entry point and source-level tests
 - [ ] Complete actual ARM cross-compilation on a machine with downloaded HAL packages
-- [ ] SWD boot on FK743M2; verify serial MSH and PH7 LED
+- [x] Prepare USB CDC/serial stack config and USB PCD board MSP
+- [ ] Actual USB enumeration as CDC ACM on FK743M2
+- [ ] ROM DFU flash H7OS on FK743M2; verify MSH and PH7 LED
 - [ ] Check system clock and chip revision on physical board
 
 ## Stage 1 — memory
@@ -21,7 +23,7 @@
 ## Stage 2 — storage and transport
 
 - [ ] Read/write W25Q64JV QSPI Flash, then add wear-aware filesystem
-- [ ] USB CDC virtual serial with MSH
+- [ ] Hardware-verify USB CDC virtual serial with MSH
 - [ ] Binary application upload protocol; integrity check on transfer
 - [ ] Preserve ROM DFU boot path for recovery
 

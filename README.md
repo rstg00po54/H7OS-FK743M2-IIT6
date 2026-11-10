@@ -2,17 +2,17 @@
 
 A dedicated RT-Thread-based application-runtime project for **FK743M2-IIT6 (STM32H743IIT6)**, targeting a Linux-like workflow: upload an application, launch it, stop it, and keep the kernel alive.
 
-**Current status: stage-0 source scaffold committed. No physical-board boot, cross-build or dynamic ELF application execution has been verified yet.** Do not assume the generated image is ready to flash.
+**Current status: USB-only stage-0 overlay prepared, not verified on the actual FK743M2.** The RT-Thread USB CDC stack is configured in source, but USB enumeration, cross-compilation, board boot and dynamic ELF application execution have not yet been tested.
 
 ## Stage-0 features
 
 - **RT-Thread v5.3.0** official H743 Nucleo BSP, copied into a local generated FK743M2 BSP
-- FK743M2-specific **25 MHz HSE → 480 MHz candidate PLL**, **USART1 PA9/PA10**, **PH7 LED**
+- FK743M2-specific **25 MHz HSE → 480 MHz candidate PLL**, **USB OTG FS PA11/PA12**, **PH7 LED**
 - Firmware stays in **2 MiB internal Flash**; kernel heap currently uses **512 KiB AXI SRAM** only
-- RT-Thread MSH console expected on **USART1 115200 8N1**, with a separate 3.3V USB-UART adapter
+- RT-Thread MSH console configured for **USB CDC ACM** (device name `vcom`); one USB data cable, no TTL adapter
 - GitHub Actions offline tests for the adapter script; generated upstream sources are not checked in
 
-USB CDC, DFU Runtime, SDRAM, file system, and application loading are **future milestones**, not implemented features. See [roadmap](docs/ROADMAP.md).
+USB CDC code is configured but **not hardware-tested**. DFU Runtime, SDRAM, filesystem, and application loading remain **future milestones**. See [roadmap](docs/ROADMAP.md).
 
 ## Building on Ubuntu
 
@@ -45,15 +45,16 @@ python3 -m unittest discover -s tests -v
 bash -n scripts/build.sh
 ```
 
-## Hardware connection for stage 0
+## USB-only stage 0 test
 
-- 3.3V USB-UART adapter **RX** ← board **PA9 TX**
-- Adapter **TX** → board **PA10 RX**, GND ↔ GND
-- Serial port: **115200 8N1** (Linux often `/dev/ttyUSB0`)
-- PH7 LED should blink; log should contain `H7OS FK743M2-IIT6 stage-0 boot`
-- Keep SWD connected to recover from bad clock/startup configuration.
+- Use a USB **data** cable connected to the FK743M2 USB OTG FS connector, not a power-only cable.
+- On Ubuntu, plug in the board and run `dmesg -w` or `ls /dev/ttyACM*`.
+- If enumeration works, open `picocom -b 115200 /dev/ttyACM0` (the baud setting is nominal for CDC), press Enter and run `help` or `list_thread`.
+- The app should print `H7OS FK743M2-IIT6 USB stage-0 boot` and a periodic heartbeat while PH7 blinks.
+- If only `0483:df11` appears, the board is still in the **STM32 ROM DFU** bootloader, not the H7OS CDC application.
+- For initial flashing/recovery, use the board BOOT0/DFU procedure with STM32CubeProgrammer or `dfu-util`; a flashing command must only be used after the MCU/Flash and target boot mode have been confirmed.
 
-See [board notes](docs/HARDWARE.md) for memory map and pin conflicts. A 5V TTL/RS232 adapter can damage the MCU.
+See [USB notes](docs/USB_ONLY.md). USB CDC is not yet hardware-tested and the first bad clock or USB image may require **BOOT0/ROM DFU recovery**, not a serial adapter.
 
 ## Why .mo instead of arbitrary .bin?
 

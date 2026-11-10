@@ -13,3 +13,10 @@ jobs:
           python3 -m unittest discover -s tests -v
       - name: Shell syntax
         run: bash -n scripts/build.sh
+      - name: Generate pinned FK743M2 BSP (source integration)
+        run: |
+          python3 scripts/prepare.py
+          python3 -m unittest discover -s tests -v
+          grep -q 'CONFIG_RT_CONSOLE_DEVICE_NAME="vcom"' third_party/rt-thread/bsp/stm32/stm32h743-fk743m2-iit6/.config
+          grep -q '#define HAL_PCD_MODULE_ENABLED' third_party/rt-thread/bsp/stm32/stm32h743-fk743m2-iit6/board/CubeMX_Config/Inc/stm32h7xx_hal_conf.h
+          grep -q 'RCC_USBCLKSOURCE_HSI48' third_party/rt-thread/bsp/stm32/stm32h743-fk743m2-iit6/board/board.c

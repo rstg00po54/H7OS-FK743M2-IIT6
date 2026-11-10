@@ -189,17 +189,13 @@ CONFIG_BSP_USBD_PHY_EMBEDDED=y
                       "#ifdef RT_USING_SERIAL",
                       "#ifdef BSP_USING_UART")
 
-    # DFU is entered via a software reset, with a magic word retained in
-    # DTCM. Check it before any HAL/USB/kernel hardware setup.
+    # Migration from older H7OS versions: undo the late board-init
+    # hook. The DFU check now runs directly in the CMSIS Reset_Handler.
     patch_shared_once(
         drv_common,
-        "rt_weak void rt_hw_board_init(void)\n"
-        "{\n"
-        "#ifdef BSP_SCB_ENABLE_I_CACHE",
-        "rt_weak void rt_hw_board_init(void)\n"
-        "{\n"
         "    extern void h7os_early_dfu_check(void);\n"
         "    h7os_early_dfu_check();\n"
+        "#ifdef BSP_SCB_ENABLE_I_CACHE",
         "#ifdef BSP_SCB_ENABLE_I_CACHE"
     )
 

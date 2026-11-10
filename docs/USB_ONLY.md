@@ -72,3 +72,25 @@ recovery. A full power cycle loses the one-shot DTCM flag.
 The last word of 128-KiB DTCM is exclusively reserved for the DFU flag.
 If linker sections/stack ever use DTCM, reserve that word explicitly.
 Do not confuse software DFU entry with a DFU-runtime USB interface.
+
+## 7. DFU entry failure and reset-stage fix (2026-11-10)
+
+Board report: the first `dfu` implementation triggered a reset, but no
+USB DFU device enumerated. **Root cause is not yet proven.**
+
+The revised build checks the one-shot DTCM flag inside CMSIS
+`Reset_Handler`, before `ExitRun0Mode`, `SystemInit` and the C runtime
+memory initialization. This is earlier than the original RT-Thread
+`rt_hw_board_init()` hook. The command also sets the USB OTG FS device
+`DCTL.SDIS` software-disconnect bit and gives the host time to detach
+before resetting.
+
+The build script calls `scripts/patch_startup.py` automatically; this
+patch is idempotent and applied to the CMSIS driver downloaded by Env.
+Only the H743 startup template is modified.
+
+This change is unverified on actual FK743M2 hardware. After flashing,
+test `dfu`, then `lsusb` (expect `0483:df11`). If no USB enumeration
+occurs, try a full power cycle and **manual BOOT0=1**; do not change
+boot option bytes. If manual BOOT0 works but software `dfu` does not,
+the remaining problem is the software handoff, not the USB cable.

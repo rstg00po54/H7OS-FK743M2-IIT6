@@ -131,14 +131,15 @@ static void h7os_led_change_mode(enum h7os_led_mode mode, rt_uint32_t duty)
 
 
 /*
- * A software reset preserves DTCM; the startup code calls this check before
- * HAL_Init/SystemClock_Config and before USB is initialized.
+ * A software reset preserves DTCM. The generated CMSIS Reset_Handler
+ * calls this routine immediately after loading the initial MSP, BEFORE
+ * ExitRun0Mode, SystemInit, .data/.bss initialization, HAL and USB setup.
  *
  * The ROM bootloader is NOT a regular RT-Thread task. Jumping directly out
  * of an active USB + RTOS session is unreliable on STM32H7. Instead, 'dfu'
  * writes a one-shot magic word to reserved DTCM and requests a system reset.
- * The early hook sees the magic, clears it, installs the STM32H743 ROM vector
- * table and transfers control using the ROM's initial MSP and reset vector.
+ * The reset hook sees the magic, clears it, installs the STM32H743 ROM
+ * vector table and transfers control using the ROM's MSP and reset vector.
  *
  * Early-stage ARM-only assembly is intentionally naked: changing MSP from an
  * ordinary C function risks corrupting its own function epilogue.
@@ -251,7 +252,21 @@ static int dfu(int argc, char **argv)
     RT_UNUSED(argv);
 
     rt_kprintf("Rebooting into STM32 ROM DFU (0483:df11)...\n");
-    rt_thread_mdelay(250); /* let the USB CDC host receive the log */
+    rt_thread_mdelay(200); /* allow host to receive last CDC message */
+
+    /* Ensure an actual USB detach at the host BEFORE a system reset.
+     * Merely restarting the CPU may leave D+ in an ambiguous state;
+     * the ROM bootloader must be able to enumerate from scratch.
+     * The USB device register block is at OTG_FS + 0x800.
+     */
+    {
+        USB_OTG_DeviceTypeDef *usb_device =
+            (USB_OTG_DeviceTypeDef *)((uintptr_t)USB_OTG_FS +
+                                      USB_OTG_DEVICE_BASE);
+        usb_device->DCTL |= USB_OTG_DCTL_SDIS;
+        __DSB();
+    }
+    rt_thread_mdelay(150); /* USB host detects device disconnect */
 
     /* DTCM is non-cacheable and is not cleared by a system reset. This
      * location must remain reserved when the linker layout changes. */

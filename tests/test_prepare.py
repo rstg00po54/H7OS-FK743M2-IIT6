@@ -6,7 +6,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
-from prepare import replace_exact, patch_shared_once, TAG, SOURCE, TARGET  # noqa: E402
+from prepare import replace_exact, patch_shared_once, TAG, SOURCE, TARGET
+from patch_startup import patch_reset_handler  # noqa: E402
 
 
 class PrepareTests(unittest.TestCase):
@@ -43,6 +44,21 @@ class PrepareTests(unittest.TestCase):
             patch_shared_once(driver, "#ifdef RT_USING_SERIAL", "#ifdef BSP_USING_UART")
             self.assertEqual(driver.read_text(), "#ifdef BSP_USING_UART\\n#endif\\n")
 
+    def test_early_reset_hook_before_system_init(self):
+        startup = ("Reset_Handler:\n"
+                   "  ldr   sp, =_estack      /* set stack pointer */\n"
+                   "  bl  ExitRun0Mode\n"
+                   "  bl  SystemInit\n")
+        patched = patch_reset_handler(startup)
+        self.assertEqual(patched.count("bl  h7os_early_dfu_check"), 1)
+        self.assertLess(patched.index("h7os_early_dfu_check"),
+                        patched.index("ExitRun0Mode"))
+        self.assertEqual(patch_reset_handler(patched), patched)
+
+    def test_unknown_reset_handler_fails(self):
+        with self.assertRaises(ValueError):
+            patch_reset_handler("Reset_Handler:\n  bl  SystemInit\n")
+
     def test_overlay_pins(self):
         msp = (ROOT / "overlay/stm32h7xx_hal_msp.c").read_text()
         self.assertIn("GPIO_PIN_11 | GPIO_PIN_12", msp)
@@ -68,7 +84,9 @@ class PrepareTests(unittest.TestCase):
         self.assertIn("MSH_CMD_EXPORT(dfu", main)
         self.assertIn("__attribute__((naked)) void h7os_early_dfu_check", main)
         self.assertIn("NVIC_SystemReset();", main)
-        self.assertIn('h7os_early_dfu_check();', (ROOT / "scripts/prepare.py").read_text())
+        self.assertIn("USB_OTG_DCTL_SDIS", main)
+        self.assertIn("rt_thread_mdelay(150)", main)
+        self.assertIn("patch_shared_once(", (ROOT / "scripts/prepare.py").read_text())
         self.assertIn('finsh_set_prompt("cc@H7OS:~$ ");', main)
         self.assertIn("return finsh_prompt;", (ROOT / "scripts/prepare.py").read_text())
 

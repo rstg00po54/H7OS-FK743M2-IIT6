@@ -54,3 +54,7 @@ Scope: a shared-address-space, RT-Thread application runtime—not a fully isola
 - [ ] Hardware-verify `led pwm 0`, `led pwm 25`, `led pwm 100`
 - [ ] Hardware-verify `dfu` disconnects CDC and enumerates 0483:df11 without BOOT0
 - [ ] Validate ROM DFU `:leave` behavior, including boot back into H7OS
+
+- [x] Move DFU handoff from RT-Thread board init to CMSIS Reset_Handler (earlier reset stage)
+- [x] Force USB software-detach before DFU software reset
+- [ ] Retest USB DFU enumeration after corrected reset-stage handoff

@@ -22,6 +22,9 @@ if [[ ! -d packages/CMSIS-Core-latest || ! -d packages/stm32h7_cmsis_driver-late
   echo "If Env is not installed, see the Ubuntu steps in README.md."
   exit 1
 fi
+# The CMSIS source is downloaded by RT-Thread Env and is not available
+# during scripts/prepare.py. Patch the *real* reset vector before SCons.
+python3 "$ROOT/scripts/patch_startup.py"
 scons -j"$(nproc)" "$@"
 echo
 echo "Build outputs: $BSP/rt-thread.elf and $BSP/rtthread.bin"

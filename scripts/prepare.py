@@ -62,9 +62,10 @@ def create_bsp() -> None:
     source = BSP_ROOT / SOURCE
     if not source.is_dir():
         raise RuntimeError(f"Missing source BSP: {source}")
-    if TARGET_PATH.exists():
-        shutil.rmtree(TARGET_PATH)
-    shutil.copytree(source, TARGET_PATH)
+    # Refresh generated BSP templates without deleting the user's
+    # packages/ downloads from 'pkgs --update'. A full rmtree here
+    # would force a new HAL/CMSIS download every time we fix an overlay.
+    shutil.copytree(source, TARGET_PATH, dirs_exist_ok=True)
 
     patch(TARGET_PATH / "Kconfig", [
         ("SOC_STM32H743ZI", "SOC_STM32H743II"),

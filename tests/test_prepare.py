@@ -24,6 +24,11 @@ class PrepareTests(unittest.TestCase):
             "USART1 on PD8"
         )
 
+    def test_regenerating_does_not_remove_pkgs_cache(self):
+        prepare = (ROOT / "scripts/prepare.py").read_text()
+        self.assertIn("dirs_exist_ok=True", prepare)
+        self.assertNotIn("shutil.rmtree(TARGET_PATH)", prepare)
+
     def test_usb_serial_does_not_require_hardware_usart(self):
         prepare = (ROOT / "scripts/prepare.py").read_text()
         self.assertIn("if GetDepend(['BSP_USING_UART']):", prepare)

@@ -27,6 +27,7 @@ jobs:
             grep -q "if GetDepend(\['BSP_USING_UART'\]):" third_party/rt-thread/bsp/stm32/libraries/HAL_Drivers/drivers/SConscript
           fi
           grep -q '#ifdef BSP_USING_UART' third_party/rt-thread/bsp/stm32/libraries/HAL_Drivers/drv_common.c
+          python3 scripts/prepare.py --no-clone
 
   firmware-build:
     runs-on: ubuntu-latest

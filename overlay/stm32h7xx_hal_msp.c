@@ -22,7 +22,14 @@ void HAL_PCD_MspInit(PCD_HandleTypeDef *hpcd)
     clk.PeriphClockSelection = RCC_PERIPHCLK_USB;
     clk.UsbClockSelection = RCC_USBCLKSOURCE_HSI48;
     if (HAL_RCCEx_PeriphCLKConfig(&clk) != HAL_OK)
-        Error_Handler();
+    {
+        /* Stop safely if the required USB 48 MHz clock cannot start.
+         * This RT-Thread BSP has no CubeMX Error_Handler() symbol. */
+        while (1)
+        {
+            __NOP();
+        }
+    }
 
     HAL_PWREx_EnableUSBVoltageDetector();
 

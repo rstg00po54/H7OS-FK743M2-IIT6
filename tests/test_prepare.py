@@ -1,11 +1,12 @@
 """Offline unit tests for the deterministic board-overlay transformation."""
 import sys
 import unittest
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
-from prepare import replace_exact, TAG, SOURCE, TARGET  # noqa: E402
+from prepare import replace_exact, patch_shared_once, TAG, SOURCE, TARGET  # noqa: E402
 
 
 class PrepareTests(unittest.TestCase):
@@ -31,14 +32,23 @@ class PrepareTests(unittest.TestCase):
 
     def test_usb_serial_does_not_require_hardware_usart(self):
         prepare = (ROOT / "scripts/prepare.py").read_text()
-        self.assertIn("if GetDepend(['BSP_USING_UART']):", prepare)
-        self.assertIn('("#ifdef RT_USING_SERIAL", "#ifdef BSP_USING_UART")', prepare)
+        self.assertIn("patch_shared_once(drivers_sconscript", prepare)
+        self.assertIn("patch_shared_once(drv_common", prepare)
+
+    def test_shared_patch_is_idempotent(self):
+        with tempfile.TemporaryDirectory() as d:
+            driver = Path(d) / "drv_common.c"
+            driver.write_text("#ifdef RT_USING_SERIAL\\n#endif\\n")
+            patch_shared_once(driver, "#ifdef RT_USING_SERIAL", "#ifdef BSP_USING_UART")
+            patch_shared_once(driver, "#ifdef RT_USING_SERIAL", "#ifdef BSP_USING_UART")
+            self.assertEqual(driver.read_text(), "#ifdef BSP_USING_UART\\n#endif\\n")
 
     def test_overlay_pins(self):
         msp = (ROOT / "overlay/stm32h7xx_hal_msp.c").read_text()
         self.assertIn("GPIO_PIN_11 | GPIO_PIN_12", msp)
         self.assertIn("GPIO_AF10_OTG1_FS", msp)
         self.assertIn("HAL_PCD_MspInit", msp)
+        self.assertNotIn("        Error_Handler();", msp)
         self.assertNotIn("HAL_UART_MspInit", msp)
         self.assertNotIn("USART3", msp)
         main = (ROOT / "overlay/main.c").read_text()

@@ -36,6 +36,15 @@ def patch(path: Path, pairs: list[tuple[str, str]]) -> None:
     path.write_text(result, encoding="utf-8")
 
 
+def patch_shared_once(path: Path, old: str, new: str) -> None:
+    """Patch a shared upstream driver idempotently across BSP regeneration."""
+    original = path.read_text(encoding="utf-8")
+    if old in original:
+        path.write_text(original.replace(old, new), encoding="utf-8")
+    elif new not in original:
+        raise ValueError(f"Unexpected upstream driver contents: {path}")
+
+
 def checkout_upstream() -> None:
     if not UPSTREAM.exists():
         UPSTREAM.parent.mkdir(parents=True, exist_ok=True)
@@ -172,14 +181,13 @@ CONFIG_BSP_USBD_PHY_EMBEDDED=y
     # exists. Disable the generic USART driver and its early init when
     # this target has BSP_USING_UART disabled.
     drivers_sconscript = BSP_ROOT / "libraries" / "HAL_Drivers" / "drivers" / "SConscript"
-    patch(drivers_sconscript, [
-        ("if GetDepend(['RT_USING_SERIAL']):",
-         "if GetDepend(['BSP_USING_UART']):"),
-    ])
+    patch_shared_once(drivers_sconscript,
+                      "if GetDepend(['RT_USING_SERIAL']):",
+                      "if GetDepend(['BSP_USING_UART']):")
     drv_common = BSP_ROOT / "libraries" / "HAL_Drivers" / "drv_common.c"
-    patch(drv_common, [
-        ("#ifdef RT_USING_SERIAL", "#ifdef BSP_USING_UART"),
-    ])
+    patch_shared_once(drv_common,
+                      "#ifdef RT_USING_SERIAL",
+                      "#ifdef BSP_USING_UART")
 
     main = TARGET_PATH / "applications" / "main.c"
     main.write_text((ROOT / "overlay" / "main.c").read_text(encoding="utf-8"),

@@ -1,0 +1,14 @@
+# Generated RT-Thread source checkout, BSP, dependencies and build products
+third_party/
+*.pyc
+__pycache__/
+.pytest_cache/
+*.elf
+*.bin
+*.hex
+*.map
+*.o
+*.d
+*.lst
+*.bak
+.env/

@@ -1,0 +1,15 @@
+name: Validate source overlays
+on:
+  push:
+  pull_request:
+jobs:
+  offline-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Python syntax and overlay tests
+        run: |
+          python3 -m py_compile scripts/prepare.py
+          python3 -m unittest discover -s tests -v
+      - name: Shell syntax
+        run: bash -n scripts/build.sh

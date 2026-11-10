@@ -27,19 +27,16 @@ cd H7OS-FK743M2-IIT6
 # Downloads RT-Thread v5.3.0 and generates the FK743M2 board-specific BSP.
 python3 scripts/prepare.py
 
-# The first time only, install RT-Thread Env (official Ubuntu installer).
-cd ~
-wget https://raw.githubusercontent.com/RT-Thread/env/master/install_ubuntu.sh
-bash install_ubuntu.sh
+# One-time RT-Thread Env setup, using GitHub only (no Gitee login).
+sudo apt install -y python3-venv
+bash scripts/install_env_github.sh
 source ~/.env/env.sh
 
-# Back to H7OS; this script runs 'pkgs --update' in the BSP directory.
-cd ~/H7OS-FK743M2-IIT6
 bash scripts/setup_deps.sh
 bash scripts/build.sh
 ```
 
-If Env is already installed in a new shell, activate it with `source ~/.env/env.sh`. The source checkout remains in `third_party/` and does not need to be downloaded again. Check `third_party/rt-thread/bsp/stm32/stm32h743-fk743m2-iit6/rtthread.bin` if SCons completes. **Firmware has not yet been tested on your board.**
+If Env is already installed in a new shell, activate it with `source ~/.env/env.sh`. The helper `scripts/install_env_github.sh` specifically bypasses the upstream installer’s automatic Gitee mirror detection. It can repair remote URLs of existing valid clones but will not delete a nonempty directory. The source checkout remains in `third_party/` and does not need to be downloaded again. Check `third_party/rt-thread/bsp/stm32/stm32h743-fk743m2-iit6/rtthread.bin` if SCons completes. **Firmware has not yet been tested on your board.**
 
 ### Test only the scripts without downloading RT-Thread
 

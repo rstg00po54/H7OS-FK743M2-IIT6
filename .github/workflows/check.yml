@@ -15,6 +15,7 @@ jobs:
         run: |
           bash -n scripts/build.sh
           bash -n scripts/setup_deps.sh
+          bash -n scripts/install_env_github.sh
       - name: Generate pinned FK743M2 BSP (source integration)
         run: |
           python3 scripts/prepare.py

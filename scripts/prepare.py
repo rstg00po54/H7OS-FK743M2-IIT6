@@ -189,6 +189,22 @@ CONFIG_BSP_USBD_PHY_EMBEDDED=y
                       "#ifdef RT_USING_SERIAL",
                       "#ifdef BSP_USING_UART")
 
+    # FinSH v5.3.0 automatically appends ">" to even custom prompts.
+    # Preserve the default prompt while allowing our exact "$ " suffix.
+    # The change is confined to the generated RT-Thread workspace.
+    finsh_shell = UPSTREAM / "components" / "finsh" / "shell.c"
+    patch_shared_once(
+        finsh_shell,
+        "        rt_strncpy(finsh_prompt, finsh_prompt_custom, sizeof(finsh_prompt) - 1);\n"
+        "    }\n"
+        "    else",
+        "        rt_strncpy(finsh_prompt, finsh_prompt_custom, sizeof(finsh_prompt) - 1);\n"
+        "        finsh_prompt[sizeof(finsh_prompt) - 1] = '\\0';\n"
+        "        return finsh_prompt;\n"
+        "    }\n"
+        "    else"
+    )
+
     main = TARGET_PATH / "applications" / "main.c"
     main.write_text((ROOT / "overlay" / "main.c").read_text(encoding="utf-8"),
                     encoding="utf-8")

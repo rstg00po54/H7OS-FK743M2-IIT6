@@ -58,6 +58,8 @@ class PrepareTests(unittest.TestCase):
         self.assertNotIn('rt_kprintf("[H7OS] heartbeat', main)
         self.assertIn("MSH_CMD_EXPORT(h7os", main)
         self.assertIn("g_h7os_led_toggles++", main)
+        self.assertIn('finsh_set_prompt("cc@H7OS:~$ ");', main)
+        self.assertIn("return finsh_prompt;", (ROOT / "scripts/prepare.py").read_text())
 
 
 if __name__ == "__main__":

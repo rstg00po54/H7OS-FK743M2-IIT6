@@ -7,6 +7,7 @@
 #include <board.h>
 #ifdef RT_USING_FINSH
 #include <finsh.h>
+#include <shell.h>
 #endif
 
 #define FK743M2_LED_PIN GET_PIN(H, 7)
@@ -43,6 +44,8 @@ int main(void)
         {
             rt_console_set_device("vcom");
 #ifdef RT_USING_FINSH
+            /* Static Linux-style identity; no filesystem/cwd tracking yet. */
+            finsh_set_prompt("cc@H7OS:~$ ");
             finsh_set_device("vcom");
 #endif
             console_ready = RT_TRUE;

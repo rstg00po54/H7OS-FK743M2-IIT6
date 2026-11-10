@@ -12,7 +12,7 @@ A dedicated RT-Thread-based application-runtime project for **FK743M2-IIT6 (STM3
 - RT-Thread MSH console configured for **USB CDC ACM** (device name `vcom`); one USB data cable, no TTL adapter
 - GitHub Actions offline tests for the adapter script; generated upstream sources are not checked in
 
-USB CDC and MSH have been **verified on the physical board**. Hardware USART is intentionally excluded from the USB-only build while retaining RT-Thread's serial framework for CDC. Periodic console heartbeat logs were removed to prevent corrupting interactive command entry; PH7 still toggles and the `h7os` MSH command reports uptime ticks and LED toggle count. Runtime DFU, SDRAM, filesystem, and application loading remain **future milestones**. See [roadmap](docs/ROADMAP.md).
+USB CDC and MSH have been **verified on the physical board**. Hardware USART is intentionally excluded from the USB-only build while retaining RT-Thread's serial framework for CDC. Periodic console heartbeat logs were removed to prevent corrupting interactive command entry; PH7 still toggles and the `h7os` MSH command reports uptime ticks and LED toggle count. The Shell now shows `cc@H7OS:~$ `, matching a Linux terminal style (the username, hostname, and `~` are fixed display text until user accounts and a working-directory-aware filesystem are implemented). Runtime DFU, SDRAM, filesystem, and application loading remain **future milestones**. See [roadmap](docs/ROADMAP.md).
 
 ## Building on Ubuntu
 

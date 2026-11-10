@@ -39,6 +39,10 @@ If `lsusb` shows `0483:df11`, it is in ROM DFU, not the USB CDC application.
 
 If no CDC device appears: verify USB cable, board boot pins, PCD startup/USB 48 MHz clock and USB D+/D- wiring. LED PH7 heartbeat may distinguish firmware execution from boot failures.
 
+### Interactive prompt
+
+After the USB shell starts, the MSH prompt is `cc@H7OS:~$ `. This is a cosmetic Linux-like prompt; H7OS does not yet have login accounts or an actual `~` home directory. The PH7 LED continues toggling silently and the `h7os` command reports status on demand.
+
 ## 4. USB vendor/product IDs
 
 Development-only test configuration uses RT-Thread's example VID/PID `0x0FFE:0x0001`; this is **not** an assigned production USB identity and must be replaced with a properly authorized ID before distributing a USB product.

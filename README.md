@@ -12,7 +12,7 @@ A dedicated RT-Thread-based application-runtime project for **FK743M2-IIT6 (STM3
 - RT-Thread MSH console configured for **USB CDC ACM** (device name `vcom`); one USB data cable, no TTL adapter
 - GitHub Actions offline tests for the adapter script; generated upstream sources are not checked in
 
-USB CDC and MSH have been **verified on the physical board**. Hardware USART is intentionally excluded from the USB-only build while retaining RT-Thread's serial framework for CDC. Periodic console heartbeat logs were removed to prevent corrupting interactive command entry; PH7 still toggles and the `h7os` MSH command reports uptime ticks and LED toggle count. The Shell now shows `cc@H7OS:~$ `, matching a Linux terminal style (the username, hostname, and `~` are fixed display text until user accounts and a working-directory-aware filesystem are implemented). Runtime DFU, SDRAM, filesystem, and application loading remain **future milestones**. See [roadmap](docs/ROADMAP.md).
+USB CDC and MSH have been **verified on the physical board**. The PH7 LED does not support a timer PWM alternate function; a **TIM6 interrupt-based software PWM (100Hz / 1% duty steps)** is available via `led pwm 0..100`, with `led on`, `led off`, `led blink`, and `led status`. The TIM6 PWM has been source-integrated but not yet validated on board. Hardware USART is intentionally excluded from the USB-only build while retaining RT-Thread's serial framework for CDC. Periodic console heartbeat logs were removed to prevent corrupting interactive command entry; PH7 still toggles and the `h7os` MSH command reports uptime ticks and LED toggle count. The Shell now shows `cc@H7OS:~$ `, matching a Linux terminal style (the username, hostname, and `~` are fixed display text until user accounts and a working-directory-aware filesystem are implemented). Runtime DFU, SDRAM, filesystem, and application loading remain **future milestones**. See [roadmap](docs/ROADMAP.md).
 
 ## Building on Ubuntu
 
@@ -50,7 +50,7 @@ bash -n scripts/build.sh
 - Use a USB **data** cable connected to the FK743M2 USB OTG FS connector, not a power-only cable.
 - On Ubuntu, plug in the board and run `dmesg -w` or `ls /dev/ttyACM*`.
 - If enumeration works, open `picocom -b 115200 /dev/ttyACM0` (the baud setting is nominal for CDC), press Enter and run `help`, `list thread`, `ps`, `free` or `h7os`.
-- The app prints `H7OS FK743M2-IIT6 USB stage-0 boot` once. The PH7 LED then blinks silently. Use `h7os` to query live RTOS tick and LED toggle counts without disturbing typed Shell commands.
+- The app prints `H7OS FK743M2-IIT6 USB stage-0 boot` once. The PH7 LED then blinks silently. Use `h7os` to query RTOS ticks, and `led pwm 25` to set 25% software PWM duty. `led blink` restores the 500ms blink.
 - If only `0483:df11` appears, the board is still in the **STM32 ROM DFU** bootloader, not the H7OS CDC application.
 - For initial flashing/recovery, use the board BOOT0/DFU procedure with STM32CubeProgrammer or `dfu-util`; a flashing command must only be used after the MCU/Flash and target boot mode have been confirmed.
 

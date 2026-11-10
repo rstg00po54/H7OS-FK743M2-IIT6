@@ -58,6 +58,9 @@ class PrepareTests(unittest.TestCase):
         self.assertNotIn('rt_kprintf("[H7OS] heartbeat', main)
         self.assertIn("MSH_CMD_EXPORT(h7os", main)
         self.assertIn("g_h7os_led_toggles++", main)
+        self.assertIn("TIM6_DAC_IRQHandler", main)
+        self.assertIn("MSH_CMD_EXPORT(led", main)
+        self.assertIn("H7OS_PWM_TICK_HZ 10000U", main)
         self.assertIn('finsh_set_prompt("cc@H7OS:~$ ");', main)
         self.assertIn("return finsh_prompt;", (ROOT / "scripts/prepare.py").read_text())
 

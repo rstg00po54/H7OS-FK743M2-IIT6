@@ -12,6 +12,7 @@
 - [x] ROM DFU flash H7OS on FK743M2 and verify interactive MSH via USB (2026-11-10)
 - [x] Remove periodic USB console heartbeat noise; retain PH7 heartbeat and add manual `h7os` status command
 - [ ] Check system clock and chip revision on physical board
+- [ ] Hardware test TIM6-based software PWM on PH7 (`led pwm 25`, `led pwm 50`, `led off`, `led blink`)
 
 ## Stage 1 — memory
 

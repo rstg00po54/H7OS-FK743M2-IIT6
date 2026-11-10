@@ -165,6 +165,21 @@ CONFIG_BSP_USBD_PHY_EMBEDDED=y
     msp.write_text((ROOT / "overlay" / "stm32h7xx_hal_msp.c").read_text(encoding="utf-8"),
                    encoding="utf-8")
 
+
+    # USB CDC registers a virtual rt_serial_device, so RT_USING_SERIAL
+    # must stay enabled. But that does not imply a physical STM32 USART
+    # exists. Disable the generic USART driver and its early init when
+    # this target has BSP_USING_UART disabled.
+    drivers_sconscript = BSP_ROOT / "libraries" / "HAL_Drivers" / "drivers" / "SConscript"
+    patch(drivers_sconscript, [
+        ("if GetDepend(['RT_USING_SERIAL']):",
+         "if GetDepend(['BSP_USING_UART']):"),
+    ])
+    drv_common = BSP_ROOT / "libraries" / "HAL_Drivers" / "drv_common.c"
+    patch(drv_common, [
+        ("#ifdef RT_USING_SERIAL", "#ifdef BSP_USING_UART"),
+    ])
+
     main = TARGET_PATH / "applications" / "main.c"
     main.write_text((ROOT / "overlay" / "main.c").read_text(encoding="utf-8"),
                     encoding="utf-8")

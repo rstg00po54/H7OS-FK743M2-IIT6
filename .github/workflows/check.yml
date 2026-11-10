@@ -57,49 +57,17 @@ jobs:
           bash scripts/build.sh
           grep -Fq 'bl  h7os_early_dfu_check' third_party/rt-thread/bsp/stm32/libraries/stm32h7_cmsis_driver-latest/Source/Templates/gcc/startup_stm32h743xx.s
           python3 scripts/patch_startup.py
-          arm-none-eabi-nm third_party/rt-thread/bsp/stm32/stm32h743-fk743m2-iit6/rt-thread.elf | grep -E ' [TW] h7os_early_dfu_check$'
-          arm-none-eabi-nm third_party/rt-thread/bsp/stm32/stm32h743-fk743m2-iit6/rt-thread.elf | grep -E ' [TW] dfs_mount$'
-          arm-none-eabi-nm third_party/rt-thread/bsp/stm32/stm32h743-fk743m2-iit6/rt-thread.elf | grep -E ' [TW] dfs_tmpfs_mount
+          arm-none-eabi-nm third_party/rt-thread/bsp/stm32/stm32h743-fk743m2-iit6/rt-thread.elf > /tmp/h7os-symbols.txt
+          grep -F ' h7os_early_dfu_check' /tmp/h7os-symbols.txt
+          grep -F ' dfs_mount' /tmp/h7os-symbols.txt
+          grep -F ' dfs_tmpfs_mount' /tmp/h7os-symbols.txt
+          grep -F ' HAL_SDRAM_Init' /tmp/h7os-symbols.txt
+          grep -F ' HAL_SDRAM_MspInit' /tmp/h7os-symbols.txt
       - name: Upload firmware images
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: H7OS-FK743M2-IIT6-tmpfs-unverified
-          path: |
-            third_party/rt-thread/bsp/stm32/stm32h743-fk743m2-iit6/rt-thread.elf
-            third_party/rt-thread/bsp/stm32/stm32h743-fk743m2-iit6/rtthread.bin
-          if-no-files-found: error
-          retention-days: 7
-
-          arm-none-eabi-nm third_party/rt-thread/bsp/stm32/stm32h743-fk743m2-iit6/rt-thread.elf | grep -E ' [TW] HAL_SDRAM_Init
-      - name: Upload firmware images
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: H7OS-FK743M2-IIT6-tmpfs-unverified
-          path: |
-            third_party/rt-thread/bsp/stm32/stm32h743-fk743m2-iit6/rt-thread.elf
-            third_party/rt-thread/bsp/stm32/stm32h743-fk743m2-iit6/rtthread.bin
-          if-no-files-found: error
-          retention-days: 7
-
-          arm-none-eabi-nm third_party/rt-thread/bsp/stm32/stm32h743-fk743m2-iit6/rt-thread.elf | grep -E ' [TW] HAL_SDRAM_MspInit
-      - name: Upload firmware images
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: H7OS-FK743M2-IIT6-tmpfs-unverified
-          path: |
-            third_party/rt-thread/bsp/stm32/stm32h743-fk743m2-iit6/rt-thread.elf
-            third_party/rt-thread/bsp/stm32/stm32h743-fk743m2-iit6/rtthread.bin
-          if-no-files-found: error
-          retention-days: 7
-
-      - name: Upload firmware images
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: H7OS-FK743M2-IIT6-tmpfs-unverified
+          name: H7OS-FK743M2-IIT6-sdram-unverified
           path: |
             third_party/rt-thread/bsp/stm32/stm32h743-fk743m2-iit6/rt-thread.elf
             third_party/rt-thread/bsp/stm32/stm32h743-fk743m2-iit6/rtthread.bin

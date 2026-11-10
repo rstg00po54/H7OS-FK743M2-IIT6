@@ -52,3 +52,23 @@ Development-only test configuration uses RT-Thread's example VID/PID `0x0FFE:0x0
 - Hardware boot and USB enumeration are not verified yet.
 - Dynamic module loader, QSPI storage and application upload protocol are not implemented yet.
 - Do not rely on unplugging/reset as a complete recovery method if BOOT0 or SWD is inaccessible.
+
+## 6. Software reboot into the STM32 ROM DFU bootloader
+
+The MSH command `dfu` uses a two-step entry so the ROM bootloader
+starts after a system reset rather than inheriting a running USB device:
+
+1. Save a one-shot flag in the reserved DTCM word `0x2001FFFC`.
+2. Issue `NVIC_SystemReset()`, then inspect and clear the flag before
+   HAL and USB hardware initialization; jump to STM32H743 system-ROM
+   entry at `0x1FF09800`.
+
+No new firmware is written by this command itself. The board should
+disconnect as USB CDC and re-enumerate as **0483:df11** if the ROM
+bootloader is running. **This feature is not yet tested on physical
+hardware**; early firmware failures can still require manual BOOT0
+recovery. A full power cycle loses the one-shot DTCM flag.
+
+The last word of 128-KiB DTCM is exclusively reserved for the DFU flag.
+If linker sections/stack ever use DTCM, reserve that word explicitly.
+Do not confuse software DFU entry with a DFU-runtime USB interface.

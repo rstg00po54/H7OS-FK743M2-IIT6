@@ -46,3 +46,11 @@
 - [ ] Automated CI cross-build, and release debug artifacts
 
 Scope: a shared-address-space, RT-Thread application runtime—not a fully isolated Linux process model. Crashing/malicious modules may crash the kernel.
+
+## Hardware validation — DFU and active-low LED
+
+- [x] Invert PH7 LED logic for active-low board wiring
+- [x] Integrate `dfu` command and one-shot reset-to-ROM jump
+- [ ] Hardware-verify `led pwm 0`, `led pwm 25`, `led pwm 100`
+- [ ] Hardware-verify `dfu` disconnects CDC and enumerates 0483:df11 without BOOT0
+- [ ] Validate ROM DFU `:leave` behavior, including boot back into H7OS

@@ -11,11 +11,15 @@
 #endif
 
 #define FK743M2_LED_PIN GET_PIN(H, 7)
+#define H7OS_DFU_MAGIC_ADDR 0x2001FFFCUL /* Reserved last word of 128KiB DTCM */
+#define H7OS_DFU_MAGIC_VALUE 0x48374446UL
+#define H7OS_ROM_BOOT_ENTRY 0x1FF09800UL
 #define H7OS_PWM_STEPS 100U
 #define H7OS_PWM_TICK_HZ 10000U /* 100 Hz LED PWM, 1% steps */
 
 /* PH7 has no timer PWM alternate function on STM32H743.
  * TIM6 supplies update interrupts; the ISR drives PH7's atomic BSRR.
+ * FK743M2 PH7 LED is ACTIVE LOW (confirmed on actual hardware).
  * This uses TIM6 exclusively until a different LED driver is selected.
  */
 enum h7os_led_mode
@@ -32,11 +36,10 @@ static volatile rt_uint32_t g_led_brightness = 50U;
 static volatile rt_uint32_t g_pwm_phase;
 static rt_bool_t g_tim6_ready;
 
-/* The board's LED is assumed active-high. If the actual board has an
- * active-low LED, swap these two BSRR writes. */
+/* The board's LED is active-low: PIN_LOW lights it up. */
 static void h7os_led_set(rt_bool_t on)
 {
-    rt_pin_write(FK743M2_LED_PIN, on ? PIN_HIGH : PIN_LOW);
+    rt_pin_write(FK743M2_LED_PIN, on ? PIN_LOW : PIN_HIGH);
 }
 
 void TIM6_DAC_IRQHandler(void)
@@ -56,9 +59,9 @@ void TIM6_DAC_IRQHandler(void)
             g_pwm_phase++;
 
         if (g_pwm_phase < g_led_brightness)
-            GPIOH->BSRR = GPIO_PIN_7;
-        else
             GPIOH->BSRR = (rt_uint32_t)GPIO_PIN_7 << 16U;
+        else
+            GPIOH->BSRR = GPIO_PIN_7;
     }
 }
 
@@ -124,6 +127,45 @@ static void h7os_led_change_mode(enum h7os_led_mode mode, rt_uint32_t duty)
         h7os_led_set(RT_TRUE);
     else if (mode != H7OS_LED_BLINK)
         h7os_led_set(RT_FALSE);
+}
+
+
+/*
+ * A software reset preserves DTCM; the startup code calls this check before
+ * HAL_Init/SystemClock_Config and before USB is initialized.
+ *
+ * The ROM bootloader is NOT a regular RT-Thread task. Jumping directly out
+ * of an active USB + RTOS session is unreliable on STM32H7. Instead, 'dfu'
+ * writes a one-shot magic word to reserved DTCM and requests a system reset.
+ * The early hook sees the magic, clears it, installs the STM32H743 ROM vector
+ * table and transfers control using the ROM's initial MSP and reset vector.
+ *
+ * Early-stage ARM-only assembly is intentionally naked: changing MSP from an
+ * ordinary C function risks corrupting its own function epilogue.
+ * Do not add globals, rt_* calls, or stack-dependent logic to this routine.
+ */
+__attribute__((naked)) void h7os_early_dfu_check(void)
+{
+    __asm volatile(
+        "ldr r0, =0x2001FFFC          \n"
+        "ldr r1, [r0]                \n"
+        "ldr r2, =0x48374446          \n"
+        "cmp r1, r2                  \n"
+        "bne 1f                      \n"
+        "movs r1, #0                 \n"
+        "str r1, [r0]                \n"
+        "dsb                         \n"
+        "ldr r0, =0x1FF09800         \n"
+        "ldr r1, =0xE000ED08         \n"
+        "str r0, [r1]                \n"
+        "dsb                         \n"
+        "isb                         \n"
+        "ldr r1, [r0]                \n"
+        "msr msp, r1                 \n"
+        "ldr r1, [r0, #4]            \n"
+        "bx r1                       \n"
+        "1: bx lr                    \n"
+    );
 }
 
 #ifdef RT_USING_FINSH
@@ -193,6 +235,33 @@ usage:
     return -RT_EINVAL;
 }
 MSH_CMD_EXPORT(led, Control PH7 LED with TIM6 software PWM);
+
+/* Reboot into the STM32H743 ROM USB DFU (VID:PID 0483:df11).
+ * The device will disconnect as soon as the reset is issued. */
+static int dfu(int argc, char **argv)
+{
+    volatile rt_uint32_t * const magic =
+        (volatile rt_uint32_t *)H7OS_DFU_MAGIC_ADDR;
+
+    if (argc != 1)
+    {
+        rt_kprintf("Usage: dfu\n");
+        return -RT_EINVAL;
+    }
+    RT_UNUSED(argv);
+
+    rt_kprintf("Rebooting into STM32 ROM DFU (0483:df11)...\n");
+    rt_thread_mdelay(250); /* let the USB CDC host receive the log */
+
+    /* DTCM is non-cacheable and is not cleared by a system reset. This
+     * location must remain reserved when the linker layout changes. */
+    *magic = H7OS_DFU_MAGIC_VALUE;
+    __DSB();
+    NVIC_SystemReset();
+    while (1) { } /* does not return */
+}
+MSH_CMD_EXPORT(dfu, Reboot to STM32H743 ROM USB DFU);
+
 
 /* Query liveness explicitly instead of continually interleaving logs with MSH. */
 static int h7os(int argc, char **argv)

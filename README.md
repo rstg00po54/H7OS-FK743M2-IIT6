@@ -2,7 +2,7 @@
 
 A dedicated RT-Thread-based application-runtime project for **FK743M2-IIT6 (STM32H743IIT6)**, targeting a Linux-like workflow: upload an application, launch it, stop it, and keep the kernel alive.
 
-**Current status: USB-only stage-0 overlay prepared, not verified on the actual FK743M2.** The RT-Thread USB CDC stack is configured in source, but USB enumeration, cross-compilation, board boot and dynamic ELF application execution have not yet been tested.
+**Current status: USB-only stage-0 boot, USB CDC ACM, and MSH shell verified on the actual FK743M2-IIT6 (2026-11-10).** The initial logs confirm `list thread` and `free` work. SDRAM, QSPI, runtime DFU and dynamic ELF application execution have not yet been tested.
 
 ## Stage-0 features
 
@@ -12,7 +12,7 @@ A dedicated RT-Thread-based application-runtime project for **FK743M2-IIT6 (STM3
 - RT-Thread MSH console configured for **USB CDC ACM** (device name `vcom`); one USB data cable, no TTL adapter
 - GitHub Actions offline tests for the adapter script; generated upstream sources are not checked in
 
-USB CDC code is configured but **not hardware-tested**. GitHub Actions also attempts a complete ARM cross-build; passing the build only confirms compile/link, not on-board USB operation. Hardware USART is intentionally excluded from the USB-only build while retaining RT-Thread's serial framework for CDC.  DFU Runtime, SDRAM, filesystem, and application loading remain **future milestones**. See [roadmap](docs/ROADMAP.md).
+USB CDC and MSH have been **verified on the physical board**. Hardware USART is intentionally excluded from the USB-only build while retaining RT-Thread's serial framework for CDC. Periodic console heartbeat logs were removed to prevent corrupting interactive command entry; PH7 still toggles and the `h7os` MSH command reports uptime ticks and LED toggle count. Runtime DFU, SDRAM, filesystem, and application loading remain **future milestones**. See [roadmap](docs/ROADMAP.md).
 
 ## Building on Ubuntu
 
@@ -36,7 +36,7 @@ bash scripts/setup_deps.sh
 bash scripts/build.sh
 ```
 
-If Env is already installed in a new shell, activate it with `source ~/.env/env.sh`. The helper `scripts/install_env_github.sh` specifically bypasses the upstream installer’s automatic Gitee mirror detection. It can repair remote URLs of existing valid clones but will not delete a nonempty directory. The source checkout remains in `third_party/` and does not need to be downloaded again. Check `third_party/rt-thread/bsp/stm32/stm32h743-fk743m2-iit6/rtthread.bin` if SCons completes. **Firmware has not yet been tested on your board.**
+If Env is already installed in a new shell, activate it with `source ~/.env/env.sh`. The helper `scripts/install_env_github.sh` specifically bypasses the upstream installer’s automatic Gitee mirror detection. It can repair remote URLs of existing valid clones but will not delete a nonempty directory. The source checkout remains in `third_party/` and does not need to be downloaded again. Check `third_party/rt-thread/bsp/stm32/stm32h743-fk743m2-iit6/rtthread.bin` if SCons completes. **The stage-0 USB CDC and Shell were tested on the board; every new build still requires validation before relying on it.**
 
 ### Test only the scripts without downloading RT-Thread
 
@@ -49,12 +49,12 @@ bash -n scripts/build.sh
 
 - Use a USB **data** cable connected to the FK743M2 USB OTG FS connector, not a power-only cable.
 - On Ubuntu, plug in the board and run `dmesg -w` or `ls /dev/ttyACM*`.
-- If enumeration works, open `picocom -b 115200 /dev/ttyACM0` (the baud setting is nominal for CDC), press Enter and run `help` or `list_thread`.
-- The app should print `H7OS FK743M2-IIT6 USB stage-0 boot` and a periodic heartbeat while PH7 blinks.
+- If enumeration works, open `picocom -b 115200 /dev/ttyACM0` (the baud setting is nominal for CDC), press Enter and run `help`, `list thread`, `ps`, `free` or `h7os`.
+- The app prints `H7OS FK743M2-IIT6 USB stage-0 boot` once. The PH7 LED then blinks silently. Use `h7os` to query live RTOS tick and LED toggle counts without disturbing typed Shell commands.
 - If only `0483:df11` appears, the board is still in the **STM32 ROM DFU** bootloader, not the H7OS CDC application.
 - For initial flashing/recovery, use the board BOOT0/DFU procedure with STM32CubeProgrammer or `dfu-util`; a flashing command must only be used after the MCU/Flash and target boot mode have been confirmed.
 
-See [USB notes](docs/USB_ONLY.md). USB CDC is not yet hardware-tested and the first bad clock or USB image may require **BOOT0/ROM DFU recovery**, not a serial adapter.
+See [USB notes](docs/USB_ONLY.md). Although USB CDC is now hardware-tested, a bad clock or USB image may require **BOOT0/ROM DFU recovery**, not a serial adapter.
 
 ## Why .mo instead of arbitrary .bin?
 

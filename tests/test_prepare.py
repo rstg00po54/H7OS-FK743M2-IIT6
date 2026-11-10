@@ -55,6 +55,9 @@ class PrepareTests(unittest.TestCase):
         self.assertIn("GET_PIN(H, 7)", main)
         self.assertIn('rt_console_set_device("vcom")', main)
         self.assertIn('finsh_set_device("vcom")', main)
+        self.assertNotIn('rt_kprintf("[H7OS] heartbeat', main)
+        self.assertIn("MSH_CMD_EXPORT(h7os", main)
+        self.assertIn("g_h7os_led_toggles++", main)
 
 
 if __name__ == "__main__":

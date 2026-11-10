@@ -8,8 +8,9 @@
 - [x] Provide host build entry point and source-level tests
 - [ ] Complete actual ARM cross-compilation on a machine with downloaded HAL packages
 - [x] Prepare USB CDC/serial stack config and USB PCD board MSP
-- [ ] Actual USB enumeration as CDC ACM on FK743M2
-- [ ] ROM DFU flash H7OS on FK743M2; verify MSH and PH7 LED
+- [x] USB enumerates as CDC ACM on FK743M2 (2026-11-10, user verified)
+- [x] ROM DFU flash H7OS on FK743M2 and verify interactive MSH via USB (2026-11-10)
+- [x] Remove periodic USB console heartbeat noise; retain PH7 heartbeat and add manual `h7os` status command
 - [ ] Check system clock and chip revision on physical board
 
 ## Stage 1 — memory
@@ -23,7 +24,7 @@
 ## Stage 2 — storage and transport
 
 - [ ] Read/write W25Q64JV QSPI Flash, then add wear-aware filesystem
-- [ ] Hardware-verify USB CDC virtual serial with MSH
+- [x] Hardware-verify USB CDC virtual serial with MSH
 - [ ] Binary application upload protocol; integrity check on transfer
 - [ ] Preserve ROM DFU boot path for recovery
 

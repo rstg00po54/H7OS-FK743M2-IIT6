@@ -11,9 +11,26 @@
 
 #define FK743M2_LED_PIN GET_PIN(H, 7)
 
+/* Updated by the main thread; 32-bit aligned loads are atomic on Cortex-M7. */
+static volatile rt_uint32_t g_h7os_led_toggles;
+
+#ifdef RT_USING_FINSH
+/* Query liveness explicitly instead of continually interleaving logs with MSH. */
+static int h7os(int argc, char **argv)
+{
+    RT_UNUSED(argc);
+    RT_UNUSED(argv);
+    rt_kprintf("H7OS FK743M2-IIT6: alive, ticks=%lu, LED toggles=%lu\n",
+               (unsigned long)rt_tick_get(),
+               (unsigned long)g_h7os_led_toggles);
+    return 0;
+}
+MSH_CMD_EXPORT(h7os, Show H7OS system heartbeat);
+#endif
+
 int main(void)
 {
-    rt_uint32_t count = 0;
+    rt_bool_t led_state = RT_FALSE;
     rt_bool_t console_ready = RT_FALSE;
 
     rt_pin_mode(FK743M2_LED_PIN, PIN_MODE_OUTPUT);
@@ -42,11 +59,9 @@ int main(void)
 
     while (1)
     {
-        rt_pin_write(FK743M2_LED_PIN,
-                     (count & 1U) ? PIN_LOW : PIN_HIGH);
-        if ((count % 4U) == 0U)
-            rt_kprintf("[H7OS] heartbeat %lu\n", (unsigned long)count);
-        count++;
+        led_state = !led_state;
+        rt_pin_write(FK743M2_LED_PIN, led_state ? PIN_HIGH : PIN_LOW);
+        g_h7os_led_toggles++;
         rt_thread_mdelay(500);
     }
 }

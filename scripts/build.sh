@@ -18,11 +18,11 @@ export RTT_EXEC_PATH="$(dirname "$(command -v arm-none-eabi-gcc)")"
 cd "$BSP"
 if [[ ! -d packages/CMSIS-Core-latest || ! -d packages/stm32h7_cmsis_driver-latest || ! -d packages/stm32h7_hal_driver-latest ]]; then
   echo "Missing RT-Thread BSP HAL/CMSIS packages."
-  echo "Install the RT-Thread Env tools; in this BSP run: pkgs --update"
-  echo "See README.md for details."
+  echo "Run: bash scripts/setup_deps.sh"
+  echo "If Env is not installed, see the Ubuntu steps in README.md."
   exit 1
 fi
 scons -j"$(nproc)" "$@"
 echo
 echo "Build outputs: $BSP/rt-thread.elf and $BSP/rtthread.bin"
-echo "Board execution NOT yet validated. Flash over SWD only after checking wiring."
+echo "Board execution NOT yet validated. For initial flashing, use known-good BOOT0/ROM DFU recovery as documented."

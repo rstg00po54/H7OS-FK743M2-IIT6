@@ -12,7 +12,9 @@ jobs:
           python3 -m py_compile scripts/prepare.py
           python3 -m unittest discover -s tests -v
       - name: Shell syntax
-        run: bash -n scripts/build.sh
+        run: |
+          bash -n scripts/build.sh
+          bash -n scripts/setup_deps.sh
       - name: Generate pinned FK743M2 BSP (source integration)
         run: |
           python3 scripts/prepare.py

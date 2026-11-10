@@ -27,3 +27,30 @@ jobs:
             grep -q "if GetDepend(\['BSP_USING_UART'\]):" third_party/rt-thread/bsp/stm32/libraries/HAL_Drivers/drivers/SConscript
           fi
           grep -q '#ifdef BSP_USING_UART' third_party/rt-thread/bsp/stm32/libraries/HAL_Drivers/drv_common.c
+
+  firmware-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ARM GNU toolchain and build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git python3 python3-venv scons gcc-arm-none-eabi
+      - name: Generate board support package
+        run: python3 scripts/prepare.py
+      - name: Install RT-Thread Env from GitHub
+        run: bash scripts/install_env_github.sh
+      - name: Fetch HAL/CMSIS dependencies
+        run: bash scripts/setup_deps.sh
+      - name: Cross-compile H7OS firmware
+        run: bash scripts/build.sh
+      - name: Upload firmware images
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: H7OS-FK743M2-IIT6-stage0-unverified
+          path: |
+            third_party/rt-thread/bsp/stm32/stm32h743-fk743m2-iit6/rt-thread.elf
+            third_party/rt-thread/bsp/stm32/stm32h743-fk743m2-iit6/rtthread.bin
+          if-no-files-found: error
+          retention-days: 7

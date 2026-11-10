@@ -12,7 +12,7 @@ A dedicated RT-Thread-based application-runtime project for **FK743M2-IIT6 (STM3
 - RT-Thread MSH console configured for **USB CDC ACM** (device name `vcom`); one USB data cable, no TTL adapter
 - GitHub Actions offline tests for the adapter script; generated upstream sources are not checked in
 
-USB CDC code is configured but **not hardware-tested**. Hardware USART is intentionally excluded from the USB-only build while retaining RT-Thread's serial framework for CDC.  DFU Runtime, SDRAM, filesystem, and application loading remain **future milestones**. See [roadmap](docs/ROADMAP.md).
+USB CDC code is configured but **not hardware-tested**. GitHub Actions also attempts a complete ARM cross-build; passing the build only confirms compile/link, not on-board USB operation. Hardware USART is intentionally excluded from the USB-only build while retaining RT-Thread's serial framework for CDC.  DFU Runtime, SDRAM, filesystem, and application loading remain **future milestones**. See [roadmap](docs/ROADMAP.md).
 
 ## Building on Ubuntu
 
